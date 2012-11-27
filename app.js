@@ -16,8 +16,8 @@ App.store = DS.Store.create({
 App.Ticket = DS.Model.extend({
     summary: DS.attr('string'),
     reporter: DS.belongsTo('App.User'),
-    ownerBinding: DS.belongsTo('App.Owner'),
-    role: DS.belongsTo('App.Role'),
+    ownerBinding: DS.belongsTo('App.User'),
+    role: DS.hasMany('App.Role'),
     description: DS.attr('string'),
     type: DS.belongsTo('App.Type'),
     status: DS.belongsTo('App.Status'),
@@ -50,20 +50,10 @@ App.Status = DS.Model.extend({
 });
 
 App.Role = DS.Model.extend({
-	title: DS.attr('string'),
 	abbr: DS.attr('string'),
+	title: DS.attr('string'),
 	tickets: DS.hasMany('App.Ticket'),
 	users: DS.hasMany('App.User')
-});
-
-App.Type = DS.Model.extend({
-	title: DS.attr('string'),
-	tickets: DS.hasMany('App.Ticket')
-});
-
-App.Component = DS.Model.extend({
-	title: DS.attr('string'),
-	tickets: DS.hasMany('App.Ticket')
 });
 
 App.User = DS.Model.extend({
@@ -76,6 +66,18 @@ App.User = DS.Model.extend({
 	tickets: DS.hasMany('App.Ticket')
 });
 
+App.Type = DS.Model.extend({
+	title: DS.attr('string'),
+	tickets: DS.hasMany('App.Ticket')
+});
+
+App.Component = DS.Model.extend({
+	title: DS.attr('string'),
+	tickets: DS.hasMany('App.Ticket')
+});
+
+
+
 // App.Owner = App.User.extend({
 // 	tickets: DS.hasMany('App.Ticket')
 // });
@@ -87,54 +89,86 @@ App.User = DS.Model.extend({
 
 App.User.FIXTURES = [
 	{
-		id: 0,
+		id: '0',
 		firstName: 'Drew',
 		lastName: 'Covi',
-		roles: [0,1]
+		roles: ['0','1','2']
 	},
 	{
-		id: 1,
+		id: '1',
 		firstName: 'Kjrsten',
 		lastName: 'Holt',
-		roles: [0,1,2]
+		roles: ['0','2']
 	}
 ];
 
 App.Role.FIXTURES = [
 	{
-		id: 0,
+		id: '0',
 		title: 'Production Lead',
 		abbr: 'PL',
-		component: 0
+		component: '0',
+		users: ['0','1']
 	},{
-		id: 1,
+		id: '1',
 		title: 'Designer',
 		abbr: 'Des',
-		component: 1
+		component: '1',
+		users: ['0']
 	},{
-		id: 2,
+		id: '2',
 		title: 'Frontend Developer',
 		abbr: 'FED',
-		component: 0
+		component: '0',
+		users: ['0','1']
 	}
 ];
 
 App.Component.FIXTURES = [
 	{
-		id: 0,
+		id: '0',
 		title: 'Production'
 	},
 	{
-		id: 1,
+		id: '1',
 		title: 'Design'
 	}
 ];
+App.Ticket.FIXTURES = [];
 
 
 /**************************
 * Views
 **************************/
+App.NewTicket = Em.View.extend({
+	tagName: 'form',
+	submit: function(){
+		console.log(App.rolesController.selected.get('title'));
+		App.store.createRecord(
+			App.Ticket,
+			{
+				reporter: App.reporterController.selected,
+				role: App.rolesController.selected,
+				owner: App.ownerController.selected,
+				summary: App.summaryController.content
+			})
+	}
+});
+App.TicketList = Em.CollectionView.extend({
+	contentBinding: 'App.ticketListController.content',
+	reporter: 'test'
+});
+App.SetReporterField = Em.Select.extend({
+	contentBinding: 'App.reporterController',
+	valueBinding: 'content.selected',
+	optionLabelPath: 'content.firstName'
+});
 
+App.SetRoleField = Em.Select.extend({
+	contentBinding: 'App.rolesController',
+	optionLabelPath: 'content.title',
+	valueBinding: 'content.selected'
+});
 
 App.SetOwnerField = Em.Select.extend({
 	contentBinding: 'App.ownerController',
@@ -142,27 +176,44 @@ App.SetOwnerField = Em.Select.extend({
 	optionLabelPath: 'content.firstName'
 });
 
-App.SetRoleField = Em.Select.extend({
-	contentBinding: 'App.rolesController',
+App.SetOwnerField = Em.Select.extend({
+	contentBinding: 'App.ownerController',
 	valueBinding: 'content.selected',
-	optionLabelPath: 'content'
+	optionLabelPath: 'content.firstName'
 });
+App.SetSummaryField = Em.TextArea.extend({
+	placeholder: 'Ticket Summary...',
+	valueBinding: 'App.summaryController.content'
+})
 
 /**************************
 * Controllers
 **************************/
+App.ticketController =Em.ArrayController.create({
+	content: [],
+	submit: function(){
+		console.log('adding record');
+	}
+});
+App.ticketListController = Em.ArrayController.create({
+	content: App.store.findAll(App.Ticket)
+})
 
-
-App.ownerController = Em.ArrayController.create({
-	content: App.store.findAll(App.User)
-	// selected: null
-	// init: function(){
-	// 	this._super();
-	// 	console.log(this);
-	// }
+App.reporterController = Em.ArrayController.create({
+	content: App.store.findAll(App.User),
+	selected: App.store.find(App.User, 0) // selecting the first entry in our fixtures
 });
 
 App.rolesController = Em.ArrayController.create({
-	// ownerSelectedBinding: 'App.ownerController.selected',
-	contentBinding: 'App.ownerController.selected.roles'
+	content: App.store.findAll(App.Role),
+	selected: App.store.find(App.Role, 0) // selecting the first entry in our fixtures
 });
+App.summaryController = Em.Controller.create({
+	content: ''
+})
+App.ownerController = Em.ArrayController.create({
+	contentBinding: 'App.rolesController.selected.users',
+	selected: ''
+});
+
+

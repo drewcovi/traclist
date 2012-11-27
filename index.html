@@ -12,10 +12,16 @@
 </head>
 <body>
     <script type="text/x-handlebars">
-
-        {{view App.SetOwnerField}}
-        {{view App.SetRoleField}}
-
+        {{#view App.NewTicket }}
+            {{view App.SetReporterField}}
+            {{view App.SetRoleField}}
+            {{view App.SetOwnerField}}
+            {{view App.SetSummaryField}}
+            <button {{ action submit }}>Add Ticket</button>
+        {{/view}}
+        {{#collection App.TicketList }}
+           {{ view.content.owner.firstName }}
+        {{/collection}}
     </script>
 </body>
 </html>
